@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        TOMCAT_SERVER = "ubuntu@98.80.230.193"
+        TOMCAT_SERVER = "ubuntu@54.173.54.129"
         WAR_FILE = "TrainBook-1.0.0-SNAPSHOT.war"
         TOMCAT_WEBAPPS = "/home/ubuntu/tomcat/tomcat1/webapps/"
     }
@@ -22,11 +22,15 @@ pipeline {
 
         stage('Deploy to Tomcat') {
             steps {
-                script {
-                    sh """
-                        scp -i ~/.ssh/id_rsa target/${WAR_FILE} ${TOMCAT_SERVER}:${TOMCAT_WEBAPPS}
-                        ssh -i ~/.ssh/id_rsa ${TOMCAT_SERVER} 'bash -c "cd /home/ubuntu/tomcat/tomcat1/bin && ./shutdown.sh && ./startup.sh"'
-                    """
+                sshagent(['tomcat-ssh']) {
+                    sh '''
+                        scp -o StrictHostKeyChecking=no target/${WAR_FILE} ${TOMCAT_SERVER}:${TOMCAT_WEBAPPS}
+                        ssh -o StrictHostKeyChecking=no ${TOMCAT_SERVER} << EOF
+                            cd /home/ubuntu/tomcat/tomcat1/bin
+                            ./shutdown.sh
+                            ./startup.sh
+                        EOF
+                    '''
                 }
             }
         }
